@@ -59,6 +59,7 @@
       "packages/*"
     ],
     "nohoist": [
+      "packages/react-app",
       "**/@graphprotocol/graph-ts",
       "**/@graphprotocol/graph-ts/**",
       "**/hardhat",
