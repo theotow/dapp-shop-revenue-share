@@ -5,6 +5,10 @@ import Address from "../Address";
 import Balance from "../Balance";
 import DisplayVariable from "./DisplayVariable";
 import FunctionForm from "./FunctionForm";
+import { Transactor } from "../../helpers";
+import { Button } from "antd";
+
+const { utils, BigNumber } = require("ethers");
 
 const noContractDisplay = (
   <div>
@@ -132,6 +136,105 @@ export default function Contract({
       >
         {contractIsDeployed ? contractDisplay : noContractDisplay}
       </Card>
+    </div>
+  );
+}
+
+const displayedContractFunctions = contract => {
+  const results = contract
+    ? Object.entries(contract.interface.functions).filter(fn => fn[1]["type"] === "function")
+    : [];
+  return results;
+};
+
+const contractDisplay = (contract, signer) => {
+  const map = {};
+  displayedContractFunctions(contract)
+    .map(contractFuncInfo => {
+      const contractFunc =
+        contractFuncInfo[1].stateMutability === "view" || contractFuncInfo[1].stateMutability === "pure"
+          ? contract[contractFuncInfo[0]]
+          : contract.connect(signer)[contractFuncInfo[0]];
+
+      return {
+        info: contractFuncInfo[1],
+        name: contractFuncInfo[1].name,
+        func: contractFunc,
+      };
+    })
+    .map(item => {
+      map[item.name] = item;
+    });
+  return map;
+};
+
+export function Shop({ gasPrice, signer, provider, chainId, contractConfig }) {
+  const contracts = useContractLoader(provider, contractConfig, chainId);
+  const erc20 = {
+    contract: contracts["USDCx"],
+    isDeployed: false,
+    funcs: {},
+  };
+  const main = {
+    contract: contracts["YourContract"],
+    isDeployed: false,
+    funcs: {},
+  };
+
+  erc20.isDeployed = useContractExistsAtAddress(provider, erc20?.contract?.address || "");
+  main.isDeployed = useContractExistsAtAddress(provider, main?.contract?.address || "");
+
+  main.funcs = useMemo(() => {
+    return contractDisplay(main.contract, signer);
+  }, [main, signer]);
+
+  erc20.funcs = useMemo(() => {
+    return contractDisplay(erc20.contract, signer);
+  }, [erc20, signer]);
+
+  const tx = Transactor(provider, gasPrice);
+
+  if (
+    Object.keys(main.funcs).length === 0 ||
+    Object.keys(erc20.funcs).length === 0 ||
+    !erc20.isDeployed ||
+    !main.isDeployed
+  ) {
+    return null;
+  }
+  return (
+    <div style={{ margin: "auto", width: "70vw" }}>
+      <img src="https://i.imgur.com/FShshnC.jpeg" width={300} />
+      <div>Price: 1 USDCx</div>
+      <Button
+        key="buybtn"
+        shape="round"
+        size="large"
+        onClick={() => {
+          const amount = utils.parseEther("1");
+          tx(erc20.funcs.approve.func(...[main.contract.address, amount]))
+            .then(() => tx(main.funcs.buyItem.func(...[amount])))
+            .catch(e => console.error(e));
+        }}
+      >
+        buy
+      </Button>
+      {/* <FunctionForm
+        key={"approve"}
+        contractFunction={erc20.funcs.approve.func}
+        functionInfo={erc20.funcs.approve.info}
+        provider={provider}
+        gasPrice={gasPrice}
+        triggerRefresh={() => {}}
+      /> */}
+      {/* <FunctionForm
+        key={"buy"}
+        contractFunction={main.funcs.buyItem.func}
+        functionInfo={main.funcs.buyItem.info}
+        provider={provider}
+        gasPrice={gasPrice}
+        triggerRefresh={() => {}}
+      /> */}
     </div>
   );
 }
