@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import {ISuperfluid, ISuperToken, ISuperApp, ISuperAgreement, SuperAppDefinitions} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol"; //"@superfluid-finance/ethereum-monorepo/packages/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
@@ -28,7 +29,7 @@ contract YourContract is ERC721 {
     IERC20 private _token;
     uint256 public _totalRevenue;
     uint256 private _tokenIdCounter; // nft ids
-    int private _cashBackPercentage;
+    uint256 public _cashBackPercentage;
     uint32 public _indexId;
 
     mapping(address => NftMetadata) private _mappingNftMeta;
@@ -92,8 +93,16 @@ contract YourContract is ERC721 {
 
     // distribute
     _idaLib.updateSubscriptionUnits(_acceptedToken, _indexId, msg.sender, (_mappingNftMeta[msg.sender].revenue/(1 ether)).toUint128());
-    _idaLib.distribute(_acceptedToken, _indexId, amount);
+    _idaLib.distribute(_acceptedToken, _indexId, SafeMath.mul(SafeMath.div(amount, 100), _cashBackPercentage));
   }
 
-    // migrate subscription on nft transfers
+   // calculate cashbackamount
+//   function cashBack(uint256 amount) public view returns (uint256) {
+//     (,,totalUnitsApproved,totalUnitsPending) = _idaLib.getIndex(_acceptedToken, address(this), _indexId);
+//     (,,units,) = _idaLib.getSubscription(_acceptedToken, address(this), _indexId, msg.sender);
+
+//     uint128 totalUnits = SafeMath.add(totalUnitsApproved, totalUnitsPending);
+//     uint128 sharePrecentage = SafeMath.div(SafeMath.mul(units, 100), totalUnits);
+//     return 1;
+//   }
 }

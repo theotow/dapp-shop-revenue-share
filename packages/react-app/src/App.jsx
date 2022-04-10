@@ -1,4 +1,5 @@
 import { Button, Col, Menu, Row } from "antd";
+import { Alert } from "antd";
 import "antd/dist/antd.css";
 import {
   useBalance,
@@ -237,6 +238,10 @@ function App(props) {
 
       <Switch>
         <Route exact path="/">
+          <Alert
+            message="10% cashback on purchase distributed amongst all shoppers according to their total purchase amount in the shop"
+            type="success"
+          />
           <Shop
             price={price}
             signer={userSigner}
